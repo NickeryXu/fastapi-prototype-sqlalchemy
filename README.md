@@ -1,4 +1,4 @@
-# fastapi[mongodb]
+# fastapi[SQLAlchemy]
 ## Quickstart
 Using docker:
 ```
@@ -32,10 +32,10 @@ app
 ├── core                - application configuration, errors, logging
 ├── crud                - CRUD related stuff
 │   └── functions       - packaged functions for CRUD in service
-├── db                  - mongodb related stuff
+├── db                  - sqlalchemy and redis related stuff
 ├── dependencies        - dependencies for project
 ├── models              - pydantic models for this application
-│   └── models          - request models, response models and database models
+│   └── models          - request models and response models
 ├── utils               - utils for project without service relationship
 ├── respcode.py         - response code for i18n
 └── app.py              - FastAPI application creation and configuration

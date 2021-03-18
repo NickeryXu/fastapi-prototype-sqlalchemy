@@ -2,34 +2,29 @@ from pydantic import BaseModel
 from datetime import datetime
 from typing import List
 
-# custom defined
-from app.utils.security import verify_password
-from app.models.common import IDModel, UpdatedAtModel, CreatedAtModel
 
-
+# user
 class UserBase(BaseModel):
-    username: str
-    role: List[int]
+    name: str
+    is_admin: bool
 
 
-class UserCreate(UserBase, IDModel, UpdatedAtModel, CreatedAtModel):
+class UserCreate(UserBase):
     password: str
 
 
 class User(UserBase):
-    id: str
-    token: str
+    id: int
+    salt: str = ""
+    hashed_password: str = ""
+
+    class Config:
+        orm_mode = True
 
 
-class UserInDB(UserBase):
-    id: str
-    salt: str = ''
-    hashed_password: str = ''
-    updatedAt: str
-    createdAt: str
-
-    def check_password(self, password: str):
-        return verify_password(self.salt + password, self.hashed_password)
+class UserList(BaseModel):
+    data: List[User]
+    total: int
 
 
 class TokenResponse(BaseModel):
@@ -38,17 +33,5 @@ class TokenResponse(BaseModel):
 
 
 class TokenPayload(BaseModel):
-    id: str
+    id: int
     exp: datetime
-
-
-class UserListModel(BaseModel):
-    id: str
-    username: str
-    role: List
-    createdAt: str
-
-
-class UserListResponse(BaseModel):
-    data: List[UserListModel]
-    total: int

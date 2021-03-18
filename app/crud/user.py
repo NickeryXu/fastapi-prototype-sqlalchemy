@@ -1,32 +1,41 @@
-from motor.motor_asyncio import AsyncIOMotorClient
-from typing import Optional
-from app.models.user import UserInDB, UserCreate, UserListModel
+from sqlalchemy.orm import Session
+
+from app.db import models
+from app.models import user
 from app.utils.security import generate_salt, get_password_hash
-from app.core.config import database_name, user_collection_name
 
 
-async def get_user(conn: AsyncIOMotorClient, query: Optional[dict]) -> UserInDB:
-    row = await conn[database_name][user_collection_name].find_one(query)
-    return UserInDB(**row) if row else None
+def get_user(db: Session, user_id: int):
+    return db.query(models.User).filter(models.User.id == user_id).first()
 
 
-async def create_user(conn: AsyncIOMotorClient, user: UserCreate) -> UserInDB:
+def get_user_by_name(db: Session, name: str):
+    return db.query(models.User).filter(models.User.name == name).first()
+
+
+def get_users(db: Session, skip: int = 0, limit: int = 20):
+    return db.query(models.User).offset(skip).limit(limit).all()
+
+
+def get_user_count(db: Session):
+    return db.query(models.User).count()
+
+
+def create_user(db: Session, user_item: user.UserCreate):
     salt = generate_salt()
-    hashed_password = get_password_hash(salt + user.password)
-    db_user = user.dict()
-    db_user['salt'] = salt
-    db_user['hashed_password'] = hashed_password
-    del db_user['password']
-    conn[database_name][user_collection_name].insert_one(db_user)
-    return UserInDB(**user.dict())
+    hashed_password = get_password_hash(salt + user_item.password)
+    db_user = models.User(name=user_item.name, hashed_password=hashed_password, salt=salt, is_admin=user_item.is_admin)
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
 
 
-async def get_user_list_by_query_with_page_and_limit(conn: AsyncIOMotorClient, query: Optional[dict], page: int,
-                                                     limit: int):
-    result = conn[database_name][user_collection_name].find(query).skip((page - 1) * limit).limit(limit)
-    return [UserListModel(**x) async for x in result]
-
-
-async def count_user_by_query(conn: AsyncIOMotorClient, query: Optional[dict]):
-    result = await conn[database_name][user_collection_name].count_documents(query)
-    return result
+def update_user(db: Session, user_id: int, password: str):
+    db_user = get_user(db, user_id=user_id)
+    salt = generate_salt()
+    db_user.salt = salt
+    db_user.hashed_password = get_password_hash(salt + password)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
